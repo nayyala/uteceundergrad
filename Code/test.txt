@@ -1,0 +1,8 @@
+
+user 
+Today's Date and Time: Tue Apr  3 21:14:40 2018
+
+Decimal: 350
+Hexadecimal: 15E
+Octal: 536
+Binary: 101011110

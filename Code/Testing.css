@@ -1,0 +1,42 @@
+body{
+	/*background-image:url('https://previews.123rf.com/images/specialthaipic/specialthaipic1304/specialthaipic130400061/19290046-rays-puple-background.jpg');*/
+}
+h1 {
+	color:blue;
+	font-size:500%;
+	font-family:courier;
+	text-align:center;
+
+}
+p{
+	color:red;
+}
+#p02{
+	color:green;
+}
+p.Name{
+	color:yellow;
+}
+.city{
+	background-color:tomato;
+	color:white;
+	padding: 10px;
+}
+pre{
+	background-color:white; 
+	color:rgba(0,0,0,1.0);
+	border:2px solid green;
+	padding: 30px;
+	margin: 100px;
+}
+
+table, td{
+	border: 1px solid black;
+	border-collapse: collapse;
+}
+th{
+	text-align:left;
+}
+td{
+	text-align:right;
+}
