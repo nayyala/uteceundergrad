@@ -1,0 +1,401 @@
+/* Example 1 */
+
+module top(clk);
+output clk;
+reg clk2;
+
+always @ (clk2)
+begin
+clk2<=1;
+#10
+clk2<=0;
+end
+
+assign clk = clk2;
+endmodule
+
+
+
+
+module NOT(a,out);
+input a;
+output out;
+reg o;
+always @ (*)
+begin
+if (a == 0)
+o<=1;
+else
+o<=0;
+end
+assign out = o;
+endmodule
+
+module AND(a,b,out);
+input a,b;
+output out;
+reg o;
+always @ (*)
+begin
+if (a == 1)
+begin
+	if (b == 1)
+	o<=1;
+	else
+	o<=0;
+end
+else
+o<=0;
+end
+
+assign out = o;
+endmodule
+
+module OR(a,b,out);
+input a,b;
+output out;
+reg o;
+always @ (*)
+begin
+if (a == 0)
+begin
+	if (b == 0)
+	o<=0;
+	else
+	o<=1;
+end
+else
+o<=1;
+end
+
+assign out = o;
+endmodule
+
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+/* Example 2 */
+module complexDivider(clk100Mhz, slowClk);
+  input clk100Mhz; //fast clock
+  output reg slowClk; //slow clock
+
+  reg[27:0] counter;
+
+  initial begin
+    counter = 0;
+    slowClk = 0;
+  end
+
+  always @ (posedge clk100Mhz)
+  begin
+    if(counter == 50000000) begin
+      counter <= 1;
+      slowClk <= ~slowClk;
+    end
+    else begin
+      counter <= counter + 1;
+    end
+  end
+
+endmodule
+
+module d_ff(q,d,clk,reset);
+     output q;
+     input d,clk,reset;
+     reg q;
+     always @(posedge clk or negedge reset) 
+     if (~reset)
+         q<= 1'b0;
+     else
+         q<=d;
+endmodule
+
+module behavioralFSM(x,clk,s,v);
+input x;
+input clk;
+wire clk1;
+reg [2:0] state;
+reg [2:0] nextstate;
+reg S,V;
+output s,v;
+initial
+begin
+ state = 0;
+end
+
+top top1(clk1);
+complexDivider(clk1,clk);
+
+
+ 
+always @ (negedge clk)
+begin
+case (state)
+0: 
+	case (x)
+	0: begin
+		nextstate<=1;
+		S<=1;
+		V<=0;
+	   end
+	1: begin
+		nextstate<=2;
+		S<=0;
+		V<=0;
+	   end
+	endcase
+1: 
+	case (x)
+	0: begin
+		nextstate<=3;
+		S<=1;
+		V<=0;
+	   end
+	1: begin
+		nextstate<=4;
+		S<=0;
+		V<=0;
+	   end
+	endcase
+2: 
+	case (x)
+	0: begin
+		nextstate<=4;
+		S<=0;
+		V<=0;
+	   end
+	1: begin 
+		nextstate<=4;
+		S<=1;
+		V<=0;
+	   end
+	endcase
+3: 
+	case (x)
+	0: begin
+		nextstate<=5;
+		S<=0;
+		V<=0;
+	   end
+	1: begin
+		nextstate<=5;
+		S<=1;
+		V<=0;
+	   end
+	endcase
+4: 
+	case (x)
+	0: begin
+		nextstate<=5;
+		S<=1;
+		V<=0;
+	   end
+	1: begin
+		nextstate<=6;
+		S<=0;
+		V<=0;
+	   end
+	endcase
+5: 
+	case (x)
+	0: begin
+		nextstate<=0;
+		S<=0;
+		V<=0;
+	   end
+	1: begin
+		nextstate<=0;
+		S<=1;
+		V<=0;
+	   end
+	endcase
+6: 
+	case (x)
+	0: begin
+		nextstate<=0;
+		S<=1;
+		V<=0;
+	   end
+	1: begin
+		nextstate<=0;
+		S<=0;
+		V<=1;
+	   end
+	endcase
+7: 
+	case (x)
+	0: nextstate<=0;
+	1:nextstate<=0;
+	endcase
+endcase
+
+end 
+
+always @ (negedge clk)
+begin
+state<=nextstate;
+end
+
+assign s = S;
+assign v = V; 
+
+endmodule 
+
+module dataflowFSM(x,clk,statenextt,s,v);
+input x;
+input clk;
+wire clk1;
+reg [2:0] state;
+output [2:0] statenextt;
+reg [2:0] statenext;
+output s,v;
+
+top top1(clk1);
+complexDivider(clk1,clk);
+
+initial begin
+statenext<=0;
+end
+
+always @ (negedge clk)
+begin
+statenext[2]<=(statenext[2]&(~statenext[1])&statenext[0])|(~x&statenext[1]&~statenext[0])|(~statenext[2]&statenext[1]&statenext[0]);
+statenext[1]<=(~x&~statenext[2]&~statenext[1])|(x&~statenext[2]&statenext[0])|(x&~statenext[2]&statenext[1]);
+statenext[0]<=(x&~statenext[2])|(~statenext[2]&~statenext[1]&statenext[0])|(statenext[1]&~statenext[0]);
+end
+
+assign statenextt = statenext;
+assign s=(~x&statenext[1])|(~x&~statenext[2]&~statenext[0])|(x&statenext[2]&~statenext[0])|(x&~statenext[1]&statenext[0]);
+assign v=statenext[2]&statenext[1]&statenext[0];
+
+endmodule
+
+module structuralFSM(x,clk,statenext,s,v,reset);
+input x;
+input clk;
+output [2:0] statenext;
+reg [2:0] statenextt;
+reg s2,s1,s0,S,V;
+output s,v;
+wire smelly;
+wire smelly2;
+wire smelly3;
+wire smelly4;
+wire smelly5;
+initial begin
+statenextt<=0;
+end
+
+
+input reset;
+ NOT not1(statenextt[2],smelly);
+ AND and1(statenextt[2],smelly,smelly);
+ AND and2(statenextt[0],smelly,smelly);
+ NOT not2(x,smelly2);
+ NOT not3(statenextt[1],smelly3);
+ AND and3(smelly2,smelly3,smelly2);
+ AND and4(smelly2,statenextt[0], smelly2);
+ NOT not4(x,smelly3);
+ NOT not5(statenextt[2],smelly4);
+ AND and5(smelly3,smelly4,smelly3);
+ AND and6(smelly3,statenextt[1],smelly3);
+ NOT not6(statenextt[2],smelly4);
+ AND and7(smelly4,statenextt[1],smelly4);
+ AND and8(smelly4,statenextt[0],smelly4);
+ OR or1(smelly,smelly2,smelly);
+ OR or2(smelly,smelly3,smelly);
+ OR or3(smelly,smelly4,s2);
+
+ 
+
+ NOT not7(statenextt[2],smelly);
+ NOT not8(statenextt[1],smelly2);
+ AND and9(smelly,smelly2,smelly);
+ AND and10(smelly,x,smelly);
+ 
+ NOT not9(statenextt[2],smelly2);
+ AND and11(smelly2,statenextt[0],smelly2);
+ AND and12(smelly2,x,smelly2);
+ 
+ NOT not10(statenextt[2],smelly3);
+ AND and13(x,smelly3,smelly3);
+ AND and14(statenextt[1],smelly3,smelly3);
+
+ NOT not11(statenextt[2],smelly4);
+ NOT not12(statenextt[1],smelly5);
+ AND and15(smelly4,smelly5,smelly4);
+ AND and16(statenextt[0],smelly4,smelly4);
+
+ OR or4(smelly,smelly2,smelly);
+ OR or5(smelly,smelly3,smelly);
+ OR or6(smelly,smelly4,smelly);
+
+ //assign s1=smelly;
+
+ NOT not13(statenextt[2],smelly);
+ AND and17(x,smelly,smelly);
+ 
+ NOT not14(statenextt[2],smelly2);
+ NOT not15(statenextt[1],smelly3);
+ AND and18(smelly2,smelly3,smelly2);
+ AND and19(statenextt[0],smelly2,smelly2);
+
+ NOT not16(statenextt[2],smelly3);
+ NOT not17(statenextt[0],smelly4);
+ AND and20(smelly3,smelly4,smelly3);
+ AND and21(statenextt[1],smelly3,s0);
+
+ //s0<=smelly3;
+
+ NOT not18(x,smelly);
+ AND and22(statenextt[1],smelly,smelly);
+ AND and23(smelly,statenextt[0],smelly);
+
+ NOT not19(x,smelly2);
+ NOT not20(statenextt[2],smelly3);
+ NOT not21(statenextt[1],smelly4);
+ AND and24(smelly2,smelly3,smelly2);
+ AND and25(smelly2,smelly4,smelly2);
+ 
+ NOT not22(statenextt[1],smelly3);
+ AND and26(statenextt[2],smelly3,smelly3);
+ AND and27(x,smelly3,smelly3);
+
+ NOT not23(statenextt[1],smelly4);
+ AND and28(statenextt[0],smelly4,smelly4);
+ AND and29(x,smelly4,smelly4);
+
+ OR or7(smelly,smelly2,smelly);
+ OR or8(smelly,smelly3,smelly);
+ OR or9(smelly,smelly4,S);
+
+ //S<=smelly;
+
+ AND and30(statenextt[2],statenextt[1],smelly);
+ AND and31(smelly,statenextt[0],smelly);
+ AND and32(smelly,x,V);
+
+ //V<=smelly;
+
+
+assign statenext = {s2,s1,s0};
+assign s = S;
+assign v = V;
+ 
+
+ 
+ 
+ 
+ 
+ d_ff flipflop1(statenext[2],s2,clk,reset);
+ d_ff flipflop2(statenext[1],s1,clk,reset);
+ d_ff flipflop3(statenext[0],s0,clk,reset);
+
+endmodule
+
+
+

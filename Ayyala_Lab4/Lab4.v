@@ -1,0 +1,349 @@
+module d_ff(
+	input D, clk,
+	output reg Q, Qnot);
+
+	initial begin
+		Q = 0;
+		Qnot = 1;
+	end
+
+	always @(posedge clk) begin
+		Q <= D;
+		Qnot <= ~D;
+	end
+endmodule
+
+module onehz_divider(clk100Mhz, slowClk);
+  input clk100Mhz; //fast clock
+  output reg slowClk; //slow clock
+
+  reg[27:0] counter;
+
+  initial begin
+    counter = 0;
+    slowClk = 0;
+  end
+
+  always @ (posedge clk100Mhz)
+  begin
+    if(counter == 50000000) begin			//mul by a million
+      counter <= 1;
+      slowClk <= ~slowClk;
+    end
+    else begin
+      counter <= counter + 1;
+    end
+  end
+
+endmodule
+
+module twohz_divider(clk100Mhz, slowClk);
+  input clk100Mhz; //fast clock
+  output reg slowClk; //slow clock
+
+  reg[27:0] counter;
+
+  initial begin
+    counter = 0;
+    slowClk = 0;
+  end
+
+  always @ (posedge clk100Mhz)
+  begin
+    if(counter == 25000000) begin		//mul by a million
+      counter <= 1;
+      slowClk <= ~slowClk;
+    end
+    else begin
+      counter <= counter + 1;
+    end
+  end
+
+endmodule
+
+module clk_50hz_divider(clk100Mhz, slowClk);
+  input clk100Mhz; //fast clock
+  output reg slowClk; //slow clock
+
+  reg[27:0] counter;
+
+  initial begin
+    counter = 0;
+    slowClk = 0;
+  end
+
+  always @ (posedge clk100Mhz)
+  begin
+    if(counter == 1000000) begin		// mul by a million later
+      counter <= 1;
+      slowClk <= ~slowClk;
+    end
+    else begin
+      counter <= counter + 1;
+    end
+  end
+
+endmodule
+
+module clk_200hz_divider(clk100Mhz, slowClk);
+  input clk100Mhz; //fast clock
+  output reg slowClk; //slow clock
+
+  reg[27:0] counter;
+
+  initial begin
+    counter = 0;
+    slowClk = 0;
+  end
+
+  always @ (posedge clk100Mhz)
+  begin
+    if(counter == 250000) begin		// mul by a million later
+      counter <= 1;
+      slowClk <= ~slowClk;
+    end
+    else begin
+      counter <= counter + 1;
+    end
+  end
+
+endmodule
+
+module clk_10hz_divider(clk100Mhz, slowClk);
+  input clk100Mhz; //fast clock
+  output reg slowClk; //slow clock
+
+  reg[27:0] counter;
+
+  initial begin
+    counter = 0;
+    slowClk = 0;
+  end
+
+  always @ (posedge clk100Mhz)
+  begin
+    if(counter == 5000000) begin		//mul by a million
+      counter <= 1;
+      slowClk <= ~slowClk;
+    end
+    else begin
+      counter <= counter + 1;
+    end
+  end
+endmodule
+
+module debouncer(
+	input in, clk,
+	output out);
+	wire qa, qan;
+
+	d_ff d1(in,clk,qa,qan);
+	d_ff d2(qa,clk,out,qan);
+endmodule
+
+
+module AND_gate2(
+	input A, B,
+	output C);
+	reg LUT[1:0][1:0];
+
+	initial begin
+	LUT[0][0] <= 0;
+	LUT[0][1] <= 0;
+	LUT[1][0] <= 0;
+	LUT[1][1] <= 1;
+	end
+
+	assign C = LUT[A][B];
+endmodule
+
+
+module singlepulse(
+	input in, clk, 
+	output s1, sp, s1n);
+	wire syncout;
+
+	d_ff d1(in,clk,s1,s1n);
+	AND_gate2 and1(s1n,in,sp);
+
+endmodule
+
+
+module singlepulsedebounce(
+	input press, clk,
+	output sp);
+	wire outdeb, s1, s1n;
+
+	debouncer db1(press,clk,outdeb);
+	singlepulse sp1(outdeb,clk,s1,sp, s1n);
+
+endmodule
+
+module inputConvert(
+input UP, DOWN, LEFT, RIGHT, clk_50hz,
+output reg[8:0] value);
+wire [3:0] temp;
+
+initial begin
+value <= 0;
+end
+
+assign temp = {UP, DOWN, LEFT, RIGHT};
+
+always@(posedge clk_50hz) begin
+case(temp)
+1:
+value <= 200;
+2: 
+value <= 150;
+4:
+value <= 500;
+8:
+value <= 50;
+default:
+value <= 0;
+endcase
+end
+endmodule
+
+
+module BCDAdder(
+	input [8:0] add, 
+	input clk,s0,s1,
+	output reg [3:0] ones, tens, hunds, thous);
+
+reg [13:0] val;
+reg [31:0] cnt;
+
+	initial begin
+	cnt = 10;
+	val = 0;
+	end
+
+	always @(posedge clk) begin
+	if (s0 == 1)
+		val <= 10;
+	else if (s1 == 1)
+		val <= 205;
+	else if ((val+add > 9998)&&(add != 0))
+		val <= 9999;	
+	else if ((add == 0) && (val > 0) && (cnt==0))
+		val <= val-1;
+	else if ((val == 0) && (add == 0))
+		val<=0;	
+	else
+		val <= (val+add)%10000;
+
+	ones <= val%10;
+	tens <= (val/10)%10;
+	hunds <= (val/100)%10;
+	thous <= (val/1000)%10;
+
+	if (cnt)
+		cnt <= cnt - 1;
+	else
+		cnt <= 10;
+	end
+endmodule
+
+module SevenSeg(
+	input clk_50hz, clk_2hz,
+	input [3:0] o,t,h,th,
+	output reg [7:1] seven, 
+	output reg [3:0] screen_val);
+	reg[3:0] output_val;
+	wire[13:0] num;
+	reg temp;
+
+	initial begin
+		screen_val <= 0;
+		output_val <= 0;
+		temp <= 0;
+	end
+
+	assign num = th*1000 + h*100 + t*10 + o;
+
+	always @(posedge clk_50hz) begin
+		if(num == 0)
+			screen_val = {clk_2hz, clk_2hz, clk_2hz, clk_2hz};
+		else if ((num != 0) && ((screen_val == 15 ) || (screen_val == 0)))
+			screen_val = 14;
+		else
+			screen_val = {screen_val[2:0], screen_val[3]};
+end
+
+	always @ (screen_val) begin
+		if((num < 200) && (num[0] == 1))
+            output_val <= 12;
+        else
+		case(screen_val)
+			7: output_val <= th;
+			11: output_val <= h;
+			13: output_val <= t;
+			14: output_val <= o;
+			default: output_val <= 0;
+		endcase
+	end
+
+	always @ (output_val) begin
+		case (output_val) 
+			4'b0000 : seven <= 7'b1000000 ; 
+			4'b0001 : seven <= 7'b1111001 ; 
+			4'b0010 : seven <= 7'b0100100 ; 
+			4'b0011 : seven <= 7'b0110000 ; 
+			4'b0100 : seven <= 7'b0011001 ; 
+			4'b0101 : seven <= 7'b0010010 ; 
+			4'b0110 : seven <= 7'b0000010 ; 
+			4'b0111 : seven <= 7'b1111000 ; 
+			4'b1000 : seven <= 7'b0000000 ; 
+			4'b1001 : seven <= 7'b0010000 ; 
+			default : seven <= 7'b1111111 ; 
+		endcase
+end
+
+
+endmodule
+
+module top(
+	input UP, DOWN, LEFT, RIGHT,clk,sw0,sw1,
+	output [7:1] seven,
+	output [3:0] screen_val);
+
+wire spup,spdwn,splft,sprgt,spsw1,spsw2;
+wire [8:0] value;
+wire [3:0] O,T,H,Th;
+
+wire clk10;
+wire clk2;
+wire clk50;
+wire clk1;
+wire clk200;
+
+clk_10hz_divider ten(clk,clk10);
+
+twohz_divider timer2(clk,clk2);
+
+clk_50hz_divider fifty(clk,clk50);
+
+clk_200hz_divider numba1(clk,clk200);
+
+onehz_divider timer3(clk,clk1);
+
+singlepulsedebounce up(UP,clk10,spup);
+singlepulsedebounce down(DOWN,clk10,spdwn);
+singlepulsedebounce left(LEFT,clk10,splft);
+singlepulsedebounce right(RIGHT,clk10,sprgt);
+
+//inputConvert convert(UP,DOWN,LEFT,RIGHT,clk,value);
+inputConvert convert(spup,spdwn,splft,sprgt,clk10,value);
+
+BCDAdder adder1(value,clk10,sw0,sw1,O,T,H,Th);
+
+
+SevenSeg display(clk200,clk2,O,T,H,Th,seven,screen_val);
+
+
+
+endmodule
+
+
